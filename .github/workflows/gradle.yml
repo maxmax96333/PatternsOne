@@ -25,8 +25,16 @@ jobs:
       - name: Wait for SUT to be available
         run: |
           echo "Waiting for server to be available..."
-          for i in {1..30}; do
-            nc -z localhost 9999 && echo "Server is available" && break
+          for i in {1..60}; do
+            # Проверка, что процесс запущен
+            pgrep -f app-replan-delivery.jar && echo "Process running" || echo "Process not found"
+          
+            # Проверка, что порт слушает
+            nc -z localhost 9999 && echo "Port 9999 is open" && break
+          
+            # Выводим netstat для диагностики
+            netstat -tuln | grep 9999
+          
             echo "Waiting..."
             sleep 1
           done
