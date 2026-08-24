@@ -17,13 +17,16 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Start SUT
-        # Запускаем SUT,
-        # имя файла SUT будет отличаться в каждой задаче.
-        # & означает, что в фоновом режиме не блокируем терминал для запуска тестов,
-        # обязательно должен быть для запуска SUT в CI
+        # Starting SUT,
+        # The name of the SUT file may differ in each task.
+        # '&' runs the process in the background so it doesn't block the terminal for running tests,
+        # which is essential for CI.
         run: java -jar ./artifacts/app-replan-delivery.jar &
+      - name: Pause before tests
+        # Adding a delay to give the SUT time to start up
+        run: sleep 10
       - name: Build with Gradle
-        # Запускаем автотесты
-        # Для проектов на базе Selenide необходимо добавить параметр для запуска браузера
-        # в headless режиме -Dselenide.headless=true, параметр --info должен остаться
+        # Run automated tests
+        # For projects using Selenide, add the parameter for headless browser mode: -Dselenide.headless=true
+        # The --info parameter should remain
         run: ./gradlew test --info -Dselenide.headless=true
