@@ -9,24 +9,28 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
           java-version: '11'
           distribution: 'adopt'
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+
       - name: Start SUT
-        # Starting SUT,
-        # The name of the SUT file may differ in each task.
-        # '&' runs the process in the background so it doesn't block the terminal for running tests,
-        # which is essential for CI.
         run: java -jar ./artifacts/app-replan-delivery.jar &
-      - name: Pause before tests
-        # Adding a delay to give the SUT time to start up
-        run: sleep 10
-      - name: Build with Gradle
-        # Run automated tests
-        # For projects using Selenide, add the parameter for headless browser mode: -Dselenide.headless=true
-        # The --info parameter should remain
+
+      - name: Wait for SUT to be available
+        run: |
+          echo "Waiting for server to be available..."
+          for i in {1..30}; do
+            nc -z localhost 9999 && echo "Server is available" && break
+            echo "Waiting..."
+            sleep 1
+          done
+        # Время ожидания увеличено до 30 секунд, чтобы обеспечить запуск сервера
+
+      - name: Build with Gradle and run tests
         run: ./gradlew test --info -Dselenide.headless=true
