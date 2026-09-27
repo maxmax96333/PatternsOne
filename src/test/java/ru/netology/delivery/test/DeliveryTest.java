@@ -8,7 +8,6 @@ import ru.netology.delivery.data.DataGenerator;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
@@ -30,63 +29,48 @@ class DeliveryTest {
                 .format(DateTimeFormatter.ofPattern(pattern));
     }
 
-    private long nextWeekdayOffset(long addDays) {
-        LocalDate plannedDate = LocalDate.now().plusDays(addDays);
-        while (plannedDate.getDayOfWeek().getValue() > 5) {
-            plannedDate = plannedDate.plusDays(1);
-        }
-        return ChronoUnit.DAYS.between(LocalDate.now(), plannedDate);
-    }
-
-    private String selectDate(long requestedOffset, long currentCalendarDateOffset) {
-        String planningDate = generateDate(requestedOffset, "dd.MM.yyyy");
-        String planningDay = generateDate(requestedOffset, "dd").replaceFirst("^0", "");
-
-        // Приложение блокирует выходные, поэтому при необходимости выбираем ближайший будний день.
-        long selectedOffset = nextWeekdayOffset(requestedOffset);
-        if (selectedOffset != requestedOffset) {
-            planningDate = generateDate(selectedOffset, "dd.MM.yyyy");
-            planningDay = generateDate(selectedOffset, "dd").replaceFirst("^0", "");
-        }
-
-        $("[data-test-id='date'] button").click();
-        if (generateDate(currentCalendarDateOffset, "MM").equals(generateDate(selectedOffset, "MM"))) {
-            $$(cssSelector("[data-day]"))
-                    .findBy(text(planningDay))
-                    .click();
-        } else {
-            // В этой версии приложения месячная стрелка имеет класс calendar__arrow_direction_right.
-            $(cssSelector(".calendar__arrow_direction_right:not(.calendar__arrow_double)")).click();
-            $$(cssSelector("[data-day]"))
-                    .findBy(text(planningDay))
+    private void selectDate(String planningDate, String planningDay,
+                            long currentCalendarDateOffset, long meetingDateOffset) {
+        $("[data-test-id='date'] input").click();
+        if (!generateDate(currentCalendarDateOffset, "MM")
+                .equals(generateDate(meetingDateOffset, "MM"))) {
+            $(cssSelector(".calendar__arrow_direction_right:not(.calendar__arrow_double)"))
                     .click();
         }
-
+        $$(cssSelector("[data-day]")).findBy(text(planningDay)).click();
         $("[data-test-id='date'] input").shouldHave(value(planningDate));
-        return planningDate;
     }
 
     @Test
     @DisplayName("Should successfully plan and replan meeting")
     void shouldSuccessfullyPlanAndReplanMeeting() {
         var validUser = DataGenerator.Registration.generateUser("ru");
-        long firstMeetingOffset = nextWeekdayOffset(7);
-        long secondMeetingOffset = nextWeekdayOffset(firstMeetingOffset + 3);
 
-        $("[data-test-id='city'] input").setValue(validUser.getCity());
-        String firstMeetingDate = selectDate(firstMeetingOffset, 3);
+        $("[data-test-id='city'] input")
+                .setValue(validUser.getCity())
+                .shouldHave(value(validUser.getCity()));
 
-        $("[data-test-id='name'] input").setValue(validUser.getName());
-        $("[data-test-id='phone'] input").setValue(validUser.getPhone());
+        String planningDate = generateDate(7, "dd.MM.yyyy");
+        String planningDay = generateDate(7, "dd").replaceFirst("^0", "");
+        selectDate(planningDate, planningDay, 3, 7);
+
+        $("[data-test-id='name'] input")
+                .setValue(validUser.getName())
+                .shouldHave(value(validUser.getName()));
+        $("[data-test-id='phone'] input")
+                .setValue(validUser.getPhone())
+                .shouldHave(value(DataGenerator.formatPhone(validUser.getPhone())));
         $("[data-test-id='agreement']").click();
 
         $$("button").findBy(text("Запланировать")).click();
 
         $("[data-test-id='success-notification']")
                 .shouldBe(visible)
-                .shouldHave(text("Встреча успешно запланирована на " + firstMeetingDate));
+                .shouldHave(text("Встреча успешно запланирована на " + planningDate));
 
-        String secondMeetingDate = selectDate(secondMeetingOffset, firstMeetingOffset);
+        String replanDate = generateDate(10, "dd.MM.yyyy");
+        String replanDay = generateDate(10, "dd").replaceFirst("^0", "");
+        selectDate(replanDate, replanDay, 7, 10);
 
         $$("button").findBy(text("Запланировать")).click();
 
@@ -104,6 +88,6 @@ class DeliveryTest {
 
         $("[data-test-id='success-notification']")
                 .shouldBe(visible)
-                .shouldHave(text("Встреча успешно запланирована на " + secondMeetingDate));
+                .shouldHave(text("Встреча успешно запланирована на " + replanDate));
     }
 }
