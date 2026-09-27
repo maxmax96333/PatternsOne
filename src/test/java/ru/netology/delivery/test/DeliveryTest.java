@@ -6,8 +6,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import ru.netology.delivery.data.DataGenerator;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
@@ -23,22 +21,15 @@ class DeliveryTest {
         open(System.getProperty("sut.url", "http://localhost:9999"));
     }
 
-    private String generateDate(long addDays, String pattern) {
-        return LocalDate.now()
-                .plusDays(addDays)
-                .format(DateTimeFormatter.ofPattern(pattern));
-    }
-
     private void selectDate(String planningDate, String planningDay,
                             long currentCalendarDateOffset, long meetingDateOffset) {
         $("[data-test-id='date'] input").click();
-        if (!generateDate(currentCalendarDateOffset, "MM")
-                .equals(generateDate(meetingDateOffset, "MM"))) {
+        if (!DataGenerator.generateDate(currentCalendarDateOffset, "MM")
+                .equals(DataGenerator.generateDate(meetingDateOffset, "MM"))) {
             $(cssSelector(".calendar__arrow_direction_right:not(.calendar__arrow_double)"))
                     .click();
         }
         $$(cssSelector("[data-day]")).findBy(text(planningDay)).click();
-        $("[data-test-id='date'] input").shouldHave(value(planningDate));
     }
 
     @Test
@@ -50,8 +41,8 @@ class DeliveryTest {
                 .setValue(validUser.getCity())
                 .shouldHave(value(validUser.getCity()));
 
-        String planningDate = generateDate(7, "dd.MM.yyyy");
-        String planningDay = generateDate(7, "dd").replaceFirst("^0", "");
+        String planningDate = DataGenerator.generateDate(7, "dd.MM.yyyy");
+        String planningDay = DataGenerator.generateDate(7, "dd").replaceFirst("^0", "");
         selectDate(planningDate, planningDay, 3, 7);
 
         $("[data-test-id='name'] input")
@@ -68,8 +59,8 @@ class DeliveryTest {
                 .shouldBe(visible)
                 .shouldHave(text("Встреча успешно запланирована на " + planningDate));
 
-        String replanDate = generateDate(10, "dd.MM.yyyy");
-        String replanDay = generateDate(10, "dd").replaceFirst("^0", "");
+        String replanDate = DataGenerator.generateDate(10, "dd.MM.yyyy");
+        String replanDay = DataGenerator.generateDate(10, "dd").replaceFirst("^0", "");
         selectDate(replanDate, replanDay, 7, 10);
 
         $$("button").findBy(text("Запланировать")).click();

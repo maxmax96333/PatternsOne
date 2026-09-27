@@ -3,12 +3,20 @@ package ru.netology.delivery.data;
 import com.github.javafaker.Faker;
 import lombok.Value;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Random;
 
 public class DataGenerator {
 
     private DataGenerator() {
+    }
+
+    public static String generateDate(long addDays, String pattern) {
+        return LocalDate.now()
+                .plusDays(addDays)
+                .format(DateTimeFormatter.ofPattern(pattern));
     }
 
     public static String generateCity(Faker faker) {
